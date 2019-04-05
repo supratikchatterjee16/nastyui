@@ -1,0 +1,266 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<title>NASTY Web</title>
+<style>
+body{
+margin:0;
+padding:0;
+width:100%;
+height:100%;
+background:url("search.jpg")rgba(0,0,0,1);
+background-repeat:no-repeat;
+background-size:100vw 100vh;
+color:white;
+}
+@font-face{
+font-family:'name_normal';
+src:url("./cmunrm.ttf");
+}
+name{
+/* Draggable div element */
+position:absolute;
+padding:10px;
+background:rgba(0,0,0,0);
+color:rgba(250,250,250,1);
+text-align:center;
+font-family:'name_normal';
+font-variant:small-caps;
+max-width:120pt;
+max-height:120pt;
+cursor:pointer;
+border-left:1pt solid rgba(250,250,250,0.5);
+}
+#search{
+position:absolute;
+top:45vh;
+left:30vw;
+font-family:'name_normal';
+font-variant:small-caps;
+text-align:center;
+width:40vw;
+height:40px;
+border:0;
+background:rgba(250,250,250,0.9);
+}
+links{
+/* This is the layer for svg relation display  */
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+display:block;
+background:rgba(20,20,20,0.5);
+}
+svg{
+	position : absolute;
+	height : inherit;
+	width:inherit;
+	display:block;
+	visibility:visible;
+	background:rgba(50,40,90,0);
+}
+</style>
+<script>
+//This is the persitent independent functions section
+function randomize(limit){
+	var ctr = 0, res = 0, temp = limit;
+	while(temp>1){
+		ctr++;
+		temp = temp / 10;
+	}
+	res = Math.random()*limit;
+	if(res>limit&&res<0)res = randomize(limit);
+	return res;
+}
+function ajax(method, url, info){
+	var xhr = new XMLHttpRequest();
+	xhr.onreadystatechange = function(){
+		var response = "";
+		if(xhr.readyState==XMLHttpRequest.DONE){
+			if(xhr.status == 200)
+				response = xhr.responseText;
+			else if(xhr.status == 400){
+				console.log("Error : "+xhr.responseText);
+				response = "";
+			}
+			else response = "";
+		}
+	};//Write the function here.
+	xhr.open(method, url, false);//Non asychronous callback to the server
+	if(info.length>0)xhr.send(info);
+	else xhr.send();
+	return xhr.onreadystatechange;
+}
+//This section is the custom libraries section
+//Global data
+var relations = {
+	"Hello World": "something else, hereafter",
+	"something else": "Hello World, hereafter, corrections",
+	"hereafter" : "Hello World, something else",
+	"corrections" : "something else"
+};//Relations mapped variable (dictionary)
+//Interdependent functions
+function fetch_entity_relations(){
+	//This is supposed to do an AJAX call to the server to fetch a dictionary of relations in the format above
+	//relations = ajax("GET","/relations","");//Change this as you see fit
+	return relations;
+}
+
+function get_line(x1,y1,x2,y2){
+	//Line elements generator.
+	var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+	line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('stroke', 'white');
+    line.setAttribute('stroke-width', '0.25');
+    //console.log("Line generated");
+	return line;
+}//get_line ends here
+
+function link_all(rel){
+	//The link creation module for the frontend
+	var elems = document.getElementsByTagName("name");
+	var pane = document.getElementsByTagName("links")[0];
+	var svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+	
+	pane.innerHTML="";//Clear pane before redrawing. Always.
+	
+	for(var i=0;i<elems.length;i++){
+		var entity = elems[i];
+		var relt = rel[entity.innerHTML];
+		var related = relt.split(",");
+		for(var j=0;j<related.length;j++){
+			var relative = related[j].trim();
+			for(var k=0;k<elems.length;k++){
+				if(elems[k].innerHTML.localeCompare(relative)==0){
+					svg.appendChild(
+						get_line(
+							entity.offsetLeft,
+							entity.offsetTop,
+							elems[k].offsetLeft,
+							elems[k].offsetTop
+						)
+					);//single line command here
+					break;
+				}
+			}
+		}
+	}
+	pane.appendChild(svg);
+}//link_all ends here
+
+function generate_draggables(tag,func, rel){
+	var pos1=0,pos2=0,pos3=0,pos4=0,elmnt;
+	//Defining internal functions for each draggable
+	function closeDragElement() {
+		/* stop moving when mouse button is released:*/
+		document.onmouseup = null;
+		document.onmousemove = null;
+	}
+	function elementDrag(e) {
+		e = e || window.event;
+		e.preventDefault();
+		// calculate the new cursor position:
+		pos1 = pos3 - e.clientX;
+		pos2 = pos4 - e.clientY;
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		// set the element's new position:
+		elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+		elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+		func(rel);
+	}
+	function dragMouseDown(e){
+		e = e || window.event;
+		e.preventDefault();
+		elmnt = e.target;
+		pos3 = e.clientX;
+		pos4 = e.clientY;
+		document.onmouseup = closeDragElement;
+		document.onmousemove = elementDrag;
+	}
+	
+	//Main program section
+	var array = document.getElementsByTagName(tag);
+	var max_width =Math.max(
+		document.documentElement["clientWidth"],
+		document.body["scrollWidth"],
+		document.documentElement["scrollWidth"],
+		document.body["offsetWidth"],
+		document.documentElement["offsetWidth"]
+	);
+	var max_height = Math.max(
+		document.documentElement["clientHeight"],
+		document.body["scrollHeight"],
+		document.documentElement["scrollHeight"],
+		document.body["offsetHeight"],
+		document.documentElement["offsetHeight"]
+	);
+	for(var i = 0;i<array.length;i++){
+		elmnt = array[i];
+		//console.log(max_width+" "+randomize(max_width));
+		elmnt.style.top = randomize(max_height-120)+"px";
+		elmnt.style.left = randomize(max_width-120)+"px";
+		elmnt.onmousedown = dragMouseDown;
+	}
+	func(rel);
+}
+
+function generate_linked_draggables(rel){
+	generate_draggables("name", link_all,rel);
+}
+
+function search(){
+	var search = document.getElementById('search').value;
+	search=search.trim().toLowerCase();
+	var name_arr = document.getElementsByTagName("name");
+	//Clear all name tags
+	for(var i=0;i<name_arr.length;i++){
+		document.body.removeChild(name_arr[i]);
+	}
+	//Populate relevant name tags
+// 	name_arr = Object.keys(relations);
+// 	var dict = {};
+// 	for(var i=0;i<name_arr.length;i++){
+// 		var name = "";
+// 		if(name_arr[i].toLowerCase().indexOf(search)>-1){
+// 			dict[name_arr[i]] = relations[name_arr[i]];
+// 			name = document.createElement("name");
+// 			name.innerHTML = name_arr[i];
+// 			document.body.appendChild(name);
+// 		}
+// 	}
+// 	generate_linked_draggables(dict);
+}
+
+function init(){
+	relations = fetch_entity_relations();
+	var names = Object.keys(relations);
+	document.body.innerHTML = "";
+	var links = document.createElement("links");
+	document.body.appendChild(links);
+	var name = "";
+	for(var i = 0;i<names.length;i++){
+		name = document.createElement("name");
+		name.innerHTML = names[i];
+		document.body.appendChild(name);
+	}
+	generate_linked_draggables(relations);
+	
+	var search = document.createElement("input");
+	search.setAttribute("id","search");
+	search.setAttribute("type","text");
+	search.setAttribute("placeholder","Search for entites");
+	search.setAttribute("onkeyup",'search()');
+	document.body.appendChild(search);
+}
+</script>
+</head>
+<body onload=init()>
+</body>
+</html>
