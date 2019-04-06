@@ -22,7 +22,7 @@ name{
 /* Draggable div element */
 position:absolute;
 padding:10px;
-background:rgba(0,0,0,0);
+background:rgba(250,250,250,0.2);
 color:rgba(250,250,250,1);
 text-align:center;
 font-family:'name_normal';
@@ -30,7 +30,7 @@ font-variant:small-caps;
 max-width:120pt;
 max-height:120pt;
 cursor:pointer;
-border-left:1pt solid rgba(250,250,250,0.5);
+border-left:1pt solid rgba(250,250,250,0);
 }
 #search{
 position:absolute;
@@ -55,12 +55,20 @@ display:block;
 background:rgba(20,20,20,0.5);
 }
 svg{
-	position : absolute;
-	height : inherit;
-	width:inherit;
-	display:block;
-	visibility:visible;
-	background:rgba(50,40,90,0);
+position : absolute;
+height : inherit;
+width:inherit;
+display:block;
+visibility:visible;
+background:rgba(50,40,90,0);
+}
+plate{
+position:absolute;
+top:0;
+left:0;
+font-family:'name_normal';
+font-variant:small-caps;
+font-size:x-large;
 }
 </style>
 <script>
@@ -133,6 +141,7 @@ function link_all(rel){
 	for(var i=0;i<elems.length;i++){
 		var entity = elems[i];
 		var relt = rel[entity.innerHTML];
+		if(relt == undefined)return;
 		var related = relt.split(",");
 		for(var j=0;j<related.length;j++){
 			var relative = related[j].trim();
@@ -215,27 +224,49 @@ function generate_linked_draggables(rel){
 	generate_draggables("name", link_all,rel);
 }
 
+function clear_names(){
+	var arr = document.body.getElementsByTagName("name");
+	var len = arr.length;
+	for(var i=len-1;i>=0;i--){
+	//Elements when removed using removeChild disappear from the array as well.
+		var child = arr[i];
+		document.body.removeChild(child);
+	}
+}
+
+function generate_names(names){
+	var name = "";
+	for(var i = 0;i<names.length;i++){
+		name = document.createElement("name");
+		name.innerHTML = names[i];
+		document.body.appendChild(name);
+	}
+}
+
 function search(){
 	var search = document.getElementById('search').value;
 	search=search.trim().toLowerCase();
+	//console.log(search);
 	var name_arr = document.getElementsByTagName("name");
-	//Clear all name tags
-	for(var i=0;i<name_arr.length;i++){
-		document.body.removeChild(name_arr[i]);
+	//If search is empty, return things to base condition
+	if(search.length == 0){
+		clear_names();
+		generate_names(Object.keys(relations));
+		generate_linked_draggables(relations);
+		return;
 	}
 	//Populate relevant name tags
-// 	name_arr = Object.keys(relations);
-// 	var dict = {};
-// 	for(var i=0;i<name_arr.length;i++){
-// 		var name = "";
-// 		if(name_arr[i].toLowerCase().indexOf(search)>-1){
-// 			dict[name_arr[i]] = relations[name_arr[i]];
-// 			name = document.createElement("name");
-// 			name.innerHTML = name_arr[i];
-// 			document.body.appendChild(name);
-// 		}
-// 	}
-// 	generate_linked_draggables(dict);
+	name_arr = Object.keys(relations);
+	var dict = {};
+	for(var i=0;i<name_arr.length;i++){
+		var name = "";
+		if(name_arr[i].toLowerCase().indexOf(search)>-1){
+			dict[name_arr[i]] = relations[name_arr[i]];
+		}
+	}
+	clear_names();
+	generate_names(Object.keys(dict));
+	generate_linked_draggables(dict);
 }
 
 function init(){
@@ -244,12 +275,7 @@ function init(){
 	document.body.innerHTML = "";
 	var links = document.createElement("links");
 	document.body.appendChild(links);
-	var name = "";
-	for(var i = 0;i<names.length;i++){
-		name = document.createElement("name");
-		name.innerHTML = names[i];
-		document.body.appendChild(name);
-	}
+	generate_names(names);
 	generate_linked_draggables(relations);
 	
 	var search = document.createElement("input");
@@ -258,6 +284,10 @@ function init(){
 	search.setAttribute("placeholder","Search for entites");
 	search.setAttribute("onkeyup",'search()');
 	document.body.appendChild(search);
+	
+	var nameholder = document.createElement("plate");
+	nameholder.innerHTML="News Analysis and Summarization";
+	document.body.appendChild(nameholder);
 }
 </script>
 </head>
