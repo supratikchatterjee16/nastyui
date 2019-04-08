@@ -21,8 +21,8 @@ src:url("./cmunrm.ttf");
 name{
 /* Draggable div element */
 position:absolute;
-padding:10px;
-background:rgba(250,250,250,0.2);
+padding:0px;
+background:rgba(250,250,250,0);
 color:rgba(250,250,250,1);
 text-align:center;
 font-family:'name_normal';
@@ -30,7 +30,7 @@ font-variant:small-caps;
 max-width:120pt;
 max-height:120pt;
 cursor:pointer;
-border-left:1pt solid rgba(250,250,250,0);
+border-left:1pt solid rgba(250,250,250,0.1);
 }
 #search{
 position:absolute;
@@ -69,6 +69,7 @@ left:0;
 font-family:'name_normal';
 font-variant:small-caps;
 font-size:x-large;
+display:none;
 }
 </style>
 <script>
@@ -84,12 +85,13 @@ function randomize(limit){
 	return res;
 }
 function ajax(method, url, info){
-	var xhr = new XMLHttpRequest();
+	var xhr = new XMLHttpRequest(), response = "";
 	xhr.onreadystatechange = function(){
-		var response = "";
 		if(xhr.readyState==XMLHttpRequest.DONE){
-			if(xhr.status == 200)
+			if(xhr.status == 200){
 				response = xhr.responseText;
+				//console.log(response);
+			}
 			else if(xhr.status == 400){
 				console.log("Error : "+xhr.responseText);
 				response = "";
@@ -100,7 +102,7 @@ function ajax(method, url, info){
 	xhr.open(method, url, false);//Non asychronous callback to the server
 	if(info.length>0)xhr.send(info);
 	else xhr.send();
-	return xhr.onreadystatechange;
+	return response;
 }
 //This section is the custom libraries section
 //Global data
@@ -113,7 +115,9 @@ var relations = {
 //Interdependent functions
 function fetch_entity_relations(){
 	//This is supposed to do an AJAX call to the server to fetch a dictionary of relations in the format above
-	//relations = ajax("GET","/relations","");//Change this as you see fit
+	relation = ajax("GET","/relations.json","");//Change this as you see fit
+	relations = JSON.parse(relation);
+	console.log(relations);
 	return relations;
 }
 
@@ -125,7 +129,7 @@ function get_line(x1,y1,x2,y2){
     line.setAttribute('x2', x2);
     line.setAttribute('y2', y2);
     line.setAttribute('stroke', 'white');
-    line.setAttribute('stroke-width', '0.25');
+    line.setAttribute('stroke-width', '0.05');
     //console.log("Line generated");
 	return line;
 }//get_line ends here
@@ -142,7 +146,8 @@ function link_all(rel){
 		var entity = elems[i];
 		var relt = rel[entity.innerHTML];
 		if(relt == undefined)return;
-		var related = relt.split(",");
+// 		else console.log(relt);
+		var related = relt[0].split(",");
 		for(var j=0;j<related.length;j++){
 			var relative = related[j].trim();
 			for(var k=0;k<elems.length;k++){
@@ -243,11 +248,21 @@ function generate_names(names){
 	}
 }
 
-function search(){
+function get_entity(name){
+	var info = ajax('POST', '/info', name);
+	alert(info);
+}
+
+function search(e){
 	var search = document.getElementById('search').value;
 	search=search.trim().toLowerCase();
 	//console.log(search);
 	var name_arr = document.getElementsByTagName("name");
+	if(e.keyCode == 13){
+		get_entity(search);
+		return;
+	}
+	else console.log(e.keyCode);
 	//If search is empty, return things to base condition
 	if(search.length == 0){
 		clear_names();
@@ -282,7 +297,7 @@ function init(){
 	search.setAttribute("id","search");
 	search.setAttribute("type","text");
 	search.setAttribute("placeholder","Search for entites");
-	search.setAttribute("onkeyup",'search()');
+	search.setAttribute("onkeyup",'search(event)');
 	document.body.appendChild(search);
 	
 	var nameholder = document.createElement("plate");
