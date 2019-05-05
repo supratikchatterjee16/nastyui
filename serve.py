@@ -25,10 +25,11 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 	
 	def generate_info(self,name):
 		string = ""
-		if name in collections:
-			record = database[name]
+		coll_low = [x.lower() for x in collections]
+		if name in coll_low:
+			record = database[collections[coll_low.index(name)]]
 			cursor = record.find({})
-			string = 'Relations : ' + str(d[name]) + "\n\n"
+			string = 'Relations : ' + str(d[collections[coll_low.index(name)]]) + "\n\n"
 			for doc in cursor:
 				string = string + doc['title']+'\n'+doc['date']+'\n'+doc['link']+'\n\n'
 		else:
